@@ -18,7 +18,7 @@ final class CorsMiddleware implements MiddlewareInterface
         $header->set('Access-Control-Expose-Headers', 'Authorization, Content-Type, Cache-Control, Content-Disposition');
         $header->set('Access-Control-Allow-Credentials', 'true');
         $header->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        $header->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, Accept-Language');
+        $header->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, Accept-Language, X-Access-Key');
 
         // Handle the preflight request
         if ($request->method() === Request::OPTIONS) {
