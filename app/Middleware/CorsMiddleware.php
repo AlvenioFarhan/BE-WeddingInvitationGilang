@@ -11,21 +11,38 @@ final class CorsMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, Closure $next)
     {
-        $header = respond()->getHeader();
+        if (!$request->ajax() && !$request->method(Request::OPTIONS)) {
+            return $next($request);
+        }
 
-        // Set the CORS headers
+        $header = respond()->getHeader();
         $header->set('Access-Control-Allow-Origin', '*');
         $header->set('Access-Control-Expose-Headers', 'Authorization, Content-Type, Cache-Control, Content-Disposition');
-        $header->set('Access-Control-Allow-Credentials', 'true');
-        $header->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        $header->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, Accept-Language, X-Access-Key');
 
-        // Handle the preflight request
-        if ($request->method() === Request::OPTIONS) {
+        $vary = $header->has('Vary') ? explode(', ', $header->get('Vary')) : [];
+        $vary = array_unique([ ...$vary, 'Accept', 'Origin', 'User-Agent', 'Access-Control-Request-Method', 'Access-Control-Request-Headers']);
+        $header->set('Vary', join(', ', $vary));
+
+        if (!$request->method(Request::OPTIONS)) {
+            return $next($request);
+        }
+
+        $header->unset('Content-Type');
+
+        if (!$request->server->has('HTTP_ACCESS_CONTROL_REQUEST_METHOD')) {
             return respond()->setCode(Respond::HTTP_NO_CONTENT);
         }
 
-        // Proceed with the request
-        return $next($request);
+        $header->set(
+            'Access-Control-Allow-Methods',
+            strtoupper($request->server->get('HTTP_ACCESS_CONTROL_REQUEST_METHOD', $request->method()))
+        );
+
+        $header->set(
+            'Access-Control-Allow-Headers',
+            $request->server->get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS', 'Origin, Content-Type, Accept, Authorization, Accept-Language')
+        );
+
+        return respond()->setCode(Respond::HTTP_NO_CONTENT);
     }
 }
